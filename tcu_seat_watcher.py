@@ -84,40 +84,44 @@ def run_search(session, hidden):
     return r.text
 
 
-def find_section_text(results_html):
-    """Return the visible text chunks that mention our section."""
+def page_text(results_html):
+    """Whole page as one normalized string."""
     soup = BeautifulSoup(results_html, "html.parser")
-    hits = []
-    for row in soup.find_all("tr"):
-        text = " ".join(row.get_text(" ", strip=True).split())
-        if COURSE in text and (SUBJECT in text or "Financial" in text):
-            hits.append(text)
-    if not hits:  # fallback: any chunk mentioning the course number
-        body = " ".join(soup.get_text(" ", strip=True).split())
-        i = body.find(COURSE)
-        if i != -1:
-            hits.append(body[max(0, i - 120): i + 220])
-    return hits
+    return " ".join(soup.get_text(" ", strip=True).split())
 
 
-def judge_open(section_texts):
+# TCU's result row ends like: "... TR 14:00-15:20 Closed 45 45 0 0"
+# i.e. the Status word (Open/Closed) followed by 4 ints: Enr, Max, RsvMax, WaitMax.
+# The search form's "Status: Any Open Closed" is NOT followed by those 4 ints,
+# so this pattern only matches a real result row.
+RESULT_RE = re.compile(r"\b(Open|Closed)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\b", re.I)
+
+
+def find_section_text(results_html):
+    """Return a short readable slice of the actual result row (for the log)."""
+    text = page_text(results_html)
+    m = RESULT_RE.search(text)
+    if not m:
+        return []
+    start = max(0, m.start() - 160)
+    return [text[start:m.end()].strip()]
+
+
+def judge_open(results_html):
     """
-    OPEN / CLOSED / UNKNOWN based on the section's text.
-    Conservative on purpose: only says OPEN on hard evidence, so it never
-    pings you on a guess. UNKNOWN means "I couldn't read it" -> no alert.
+    Read the real Status column. OPEN / CLOSED / UNKNOWN.
+    Trusts the Status word, and treats Enrolled < Max as open too.
+    UNKNOWN (couldn't find the row) never triggers an alert.
     """
-    joined = " ".join(section_texts).lower()
-    if not joined:
+    text = results_html if isinstance(results_html, str) else ""
+    m = RESULT_RE.search(text)
+    if not m:
         return "UNKNOWN"
-    m = re.search(r"(\d+)\s*/\s*(\d+)", joined)   # e.g. "31/32" = taken/cap
-    if m:
-        taken, cap = int(m.group(1)), int(m.group(2))
-        return "OPEN" if taken < cap else "CLOSED"
-    if "closed" in joined or "full" in joined or "waitlist" in joined:
-        return "CLOSED"
-    if "open" in joined:
+    status_word = m.group(1).lower()
+    enrolled, capacity = int(m.group(2)), int(m.group(3))
+    if status_word == "open" or enrolled < capacity:
         return "OPEN"
-    return "UNKNOWN"
+    return "CLOSED"
 
 
 def notify(title, message):
@@ -152,11 +156,12 @@ def main():
     session = requests.Session()
     hidden = get_hidden_fields(session)
     html = run_search(session, hidden)
+    text = page_text(html)
     texts = find_section_text(html)
-    status = judge_open(texts)
+    status = judge_open(text)
 
     print(f"{label}: status = {status}")
-    # Always dump what the page said, so the reading can be verified/locked in.
+    # Dump the actual result row, so the reading can always be sanity-checked.
     print(">>>> RAW SECTION TEXT (copy this whole block to Claude) >>>>")
     print("\n".join(texts) if texts else "(section row not found)")
     print("<<<< END RAW SECTION TEXT <<<<")
