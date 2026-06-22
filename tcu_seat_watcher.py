@@ -101,7 +101,11 @@ def find_section_text(results_html):
 
 
 def judge_open(section_texts):
-    """OPEN / CLOSED / UNKNOWN based on the section's text."""
+    """
+    OPEN / CLOSED / UNKNOWN based on the section's text.
+    Conservative on purpose: only says OPEN on hard evidence, so it never
+    pings you on a guess. UNKNOWN means "I couldn't read it" -> no alert.
+    """
     joined = " ".join(section_texts).lower()
     if not joined:
         return "UNKNOWN"
@@ -109,9 +113,9 @@ def judge_open(section_texts):
     if m:
         taken, cap = int(m.group(1)), int(m.group(2))
         return "OPEN" if taken < cap else "CLOSED"
-    if "closed" in joined or "full" in joined:
+    if "closed" in joined or "full" in joined or "waitlist" in joined:
         return "CLOSED"
-    if "open" in joined or "available" in joined or "seats" in joined:
+    if "open" in joined:
         return "OPEN"
     return "UNKNOWN"
 
@@ -123,7 +127,9 @@ def notify(title, message):
             requests.post(
                 f"https://ntfy.sh/{NTFY_TOPIC}",
                 data=message.encode("utf-8"),
-                headers={"Title": title, "Priority": "high", "Tags": "rotating_light"},
+                # Title header must be plain ASCII; the Tags render the icon.
+                headers={"Title": title.encode("ascii", "ignore").decode(),
+                         "Priority": "high", "Tags": "rotating_light"},
                 timeout=30,
             )
             sent = True
@@ -141,7 +147,6 @@ def notify(title, message):
 
 
 def main():
-    test = "--test" in sys.argv or "--verbose" in sys.argv
     label = f"{SUBJECT} {COURSE}-{SECTION}"
 
     session = requests.Session()
@@ -151,14 +156,14 @@ def main():
     status = judge_open(texts)
 
     print(f"{label}: status = {status}")
-    if test:
-        print("---- what the scraper sees for this section ----")
-        print("\n".join(texts) if texts else "(section row not found)")
-        print("------------------------------------------------")
+    # Always dump what the page said, so the reading can be verified/locked in.
+    print(">>>> RAW SECTION TEXT (copy this whole block to Claude) >>>>")
+    print("\n".join(texts) if texts else "(section row not found)")
+    print("<<<< END RAW SECTION TEXT <<<<")
 
     if status == "OPEN":
         notify(
-            f"🚨 {label} just OPENED",
+            f"{label} just OPENED",
             f"A seat opened in {label} (Rodriguez). Log into Purple Schedule "
             f"Builder and SWAP it in right now before it's gone.",
         )
