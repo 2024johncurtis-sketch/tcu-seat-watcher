@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """
-TCU class seat watcher
-----------------------
-Polls the PUBLIC TCU class search (classes.tcu.edu, no login) for one section
-and pings you when it flips from full/closed to OPEN.
+TCU class seat watcher (multi-class)
+------------------------------------
+Polls the PUBLIC TCU class search (classes.tcu.edu, no login) for one or more
+sections and pings you when any of them flips to OPEN.
 
-Configured below for: FINA 30153 section 055 (Rodriguez), Fall 2026.
-Change the CONFIG block to watch a different class.
-
-Run a one-off check + see what it scraped:   python tcu_seat_watcher.py --test
-Normal run (used by GitHub Actions):          python tcu_seat_watcher.py
+Add a class: copy a line in the CLASSES list below and change the 3 values.
 """
 
 import os
@@ -18,20 +14,29 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 
-# ----------------------------- CONFIG --------------------------------
-TERM    = "4267"     # Fall 2026  (this is the ddlTerm value from your search)
-SUBJECT = "FINA"     # department code
-COURSE  = "30153"    # course number
-SECTION = "055"      # the section you want (Rodriguez, CRN 71859)
+# ------------------------------- CONFIG -------------------------------
+TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
 
-# Where to send the alert. Set ONE (or both) as environment variables.
+# Watch as many classes as you want. To add one, copy a line, change the
+# subject / course / section. The "note" is just a label for the alert.
+CLASSES = [
+    {"subject": "FINA", "course": "30153", "section": "055", "note": "Rodriguez"},
+    {"subject": "INSC", "course": "30801", "section": "076", "note": "Markham"},
+]
+
+# Where to send the alert (set as environment variables / GitHub secrets).
 NTFY_TOPIC      = os.environ.get("NTFY_TOPIC", "")       # easiest: phone push
 DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK", "")  # or a Discord channel
-# ---------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 BASE_URL = "https://classes.tcu.edu/default.aspx"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+
+# A real result row ends like: "... TR 14:00-15:20 Closed 45 45 0 0"
+# (Status word + 4 ints: Enr, Max, RsvMax, WaitMax). The search form's
+# "Status: Any Open Closed" is NOT followed by 4 ints, so this won't false-match.
+RESULT_RE = re.compile(r"\b(Open|Closed)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\b", re.I)
 
 
 def get_hidden_fields(session):
@@ -51,8 +56,8 @@ def get_hidden_fields(session):
     }
 
 
-def run_search(session, hidden):
-    """Submit the search form for the configured section."""
+def run_search(session, hidden, subject, course, section):
+    """Submit the search form for one section; return the results HTML."""
     data = {
         "__EVENTTARGET": "",
         "__EVENTARGUMENT": "",
@@ -62,9 +67,9 @@ def run_search(session, hidden):
         "ddlTerm": TERM,
         "ddlSession": "ANY",
         "ddlLocation": "ANY",
-        "ddlSubject": SUBJECT,
-        "txtCrsNumber": COURSE,
-        "txtSection": SECTION,
+        "ddlSubject": subject,
+        "txtCrsNumber": course,
+        "txtSection": section,
         "ddlAttribute": "ANY",
         "ddlLevel": "ANY",
         "ddlDay": "ANY",
@@ -90,30 +95,16 @@ def page_text(results_html):
     return " ".join(soup.get_text(" ", strip=True).split())
 
 
-# TCU's result row ends like: "... TR 14:00-15:20 Closed 45 45 0 0"
-# i.e. the Status word (Open/Closed) followed by 4 ints: Enr, Max, RsvMax, WaitMax.
-# The search form's "Status: Any Open Closed" is NOT followed by those 4 ints,
-# so this pattern only matches a real result row.
-RESULT_RE = re.compile(r"\b(Open|Closed)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\b", re.I)
-
-
-def find_section_text(results_html):
-    """Return a short readable slice of the actual result row (for the log)."""
-    text = page_text(results_html)
+def result_slice(text):
+    """A short readable piece of the actual result row (for the log)."""
     m = RESULT_RE.search(text)
     if not m:
-        return []
-    start = max(0, m.start() - 160)
-    return [text[start:m.end()].strip()]
+        return "(section row not found)"
+    return text[max(0, m.start() - 160): m.end()].strip()
 
 
-def judge_open(results_html):
-    """
-    Read the real Status column. OPEN / CLOSED / UNKNOWN.
-    Trusts the Status word, and treats Enrolled < Max as open too.
-    UNKNOWN (couldn't find the row) never triggers an alert.
-    """
-    text = results_html if isinstance(results_html, str) else ""
+def judge_open(text):
+    """Read the real Status column. OPEN / CLOSED / UNKNOWN."""
     m = RESULT_RE.search(text)
     if not m:
         return "UNKNOWN"
@@ -131,7 +122,6 @@ def notify(title, message):
             requests.post(
                 f"https://ntfy.sh/{NTFY_TOPIC}",
                 data=message.encode("utf-8"),
-                # Title header must be plain ASCII; the Tags render the icon.
                 headers={"Title": title.encode("ascii", "ignore").decode(),
                          "Priority": "high", "Tags": "rotating_light"},
                 timeout=30,
@@ -150,28 +140,36 @@ def notify(title, message):
         print(f"[no notifier set] {title}: {message}", file=sys.stderr)
 
 
-def main():
-    label = f"{SUBJECT} {COURSE}-{SECTION}"
+def check_one(session, cls):
+    """Search one class, report status, and alert if it's open."""
+    subject, course, section = cls["subject"], cls["course"], cls["section"]
+    note = cls.get("note", "")
+    label = f"{subject} {course}-{section}" + (f" ({note})" if note else "")
 
-    session = requests.Session()
-    hidden = get_hidden_fields(session)
-    html = run_search(session, hidden)
-    text = page_text(html)
-    texts = find_section_text(html)
-    status = judge_open(text)
+    try:
+        hidden = get_hidden_fields(session)
+        html = run_search(session, hidden, subject, course, section)
+        text = page_text(html)
+        status = judge_open(text)
+    except Exception as e:
+        print(f"{label}: ERROR {e}", file=sys.stderr)
+        return
 
     print(f"{label}: status = {status}")
-    # Dump the actual result row, so the reading can always be sanity-checked.
-    print(">>>> RAW SECTION TEXT (copy this whole block to Claude) >>>>")
-    print("\n".join(texts) if texts else "(section row not found)")
-    print("<<<< END RAW SECTION TEXT <<<<")
+    print(f"    row: {result_slice(text)}")
 
     if status == "OPEN":
         notify(
             f"{label} just OPENED",
-            f"A seat opened in {label} (Rodriguez). Log into Purple Schedule "
-            f"Builder and SWAP it in right now before it's gone.",
+            f"A seat opened in {label}. Log into Purple Schedule Builder and "
+            f"SWAP it in right now before it's gone.",
         )
+
+
+def main():
+    session = requests.Session()
+    for cls in CLASSES:
+        check_one(session, cls)
     return 0
 
 
