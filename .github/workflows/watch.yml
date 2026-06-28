@@ -3,16 +3,24 @@ on:
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
+
+# Only one run at a time. While a 5.5h loop is going, the next scheduled
+# trigger waits and takes over right when it finishes -> continuous coverage.
+concurrency:
+  group: tcu-seat-watcher
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install requests beautifulsoup4
-      - run: python tcu_seat_watcher.py
+      - run: python tcu_seat_watcher.py --loop
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
