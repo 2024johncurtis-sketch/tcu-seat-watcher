@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-TCU class seat watcher (multi-class)
-------------------------------------
+TCU class seat watcher (multi-class, self-looping)
+--------------------------------------------------
 Polls the PUBLIC TCU class search (classes.tcu.edu, no login) for one or more
 sections and pings you when any of them flips to OPEN.
+
+Run modes:
+  python tcu_seat_watcher.py          one pass, then exit (good for testing)
+  python tcu_seat_watcher.py --loop   check every 5 min for ~5.5 hours, then exit
+                                       (this is what GitHub Actions runs)
 
 Add a class: copy a line in the CLASSES list below and change the 3 values.
 """
@@ -11,6 +16,7 @@ Add a class: copy a line in the CLASSES list below and change the 3 values.
 import os
 import re
 import sys
+import time
 import requests
 from bs4 import BeautifulSoup
 
@@ -31,6 +37,11 @@ CLASSES = [
 # Where to send the alert (set as environment variables / GitHub secrets).
 NTFY_TOPIC      = os.environ.get("NTFY_TOPIC", "")       # easiest: phone push
 DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK", "")  # or a Discord channel
+
+# Loop timing.
+CHECK_EVERY_SECONDS = 300                 # check every 5 minutes
+MAX_RUNTIME_SECONDS = 5 * 3600 + 30 * 60  # ~5.5 h, stays under GitHub's 6h cap
+REMIND_SECONDS      = 1800                # re-ping every 30 min while still open
 # ----------------------------------------------------------------------
 
 BASE_URL = "https://classes.tcu.edu/default.aspx"
@@ -144,8 +155,8 @@ def notify(title, message):
         print(f"[no notifier set] {title}: {message}", file=sys.stderr)
 
 
-def check_one(session, cls):
-    """Search one class, report status, and alert if it's open."""
+def check_one(session, cls, state):
+    """Search one class; alert when it opens (and remind while it stays open)."""
     subject, course, section = cls["subject"], cls["course"], cls["section"]
     note = cls.get("note", "")
     label = f"{subject} {course}-{section}" + (f" ({note})" if note else "")
@@ -162,18 +173,45 @@ def check_one(session, cls):
     print(f"{label}: status = {status}")
     print(f"    row: {result_slice(text)}")
 
+    if status == "UNKNOWN":
+        return  # couldn't read it -> never alert on a guess
+
+    st = state.setdefault(label, {"status": None, "notified_at": 0.0})
+    now = time.time()
     if status == "OPEN":
-        notify(
-            f"{label} just OPENED",
-            f"A seat opened in {label}. Log into Purple Schedule Builder and "
-            f"SWAP it in right now before it's gone.",
-        )
+        just_opened = st["status"] != "OPEN"
+        due_reminder = (now - st["notified_at"]) >= REMIND_SECONDS
+        if just_opened or due_reminder:
+            notify(
+                f"{label} just OPENED",
+                f"A seat opened in {label}. Log into Purple Schedule Builder and "
+                f"SWAP it in right now before it's gone.",
+            )
+            st["notified_at"] = now
+    st["status"] = status
+
+
+def run_once(session, state):
+    for cls in CLASSES:
+        check_one(session, cls, state)
 
 
 def main():
     session = requests.Session()
-    for cls in CLASSES:
-        check_one(session, cls)
+    state = {}
+
+    if "--loop" not in sys.argv:
+        run_once(session, state)
+        return 0
+
+    start = time.time()
+    while time.time() - start < MAX_RUNTIME_SECONDS:
+        run_once(session, state)
+        remaining = MAX_RUNTIME_SECONDS - (time.time() - start)
+        if remaining <= 0:
+            break
+        time.sleep(min(CHECK_EVERY_SECONDS, remaining))
+    print("loop window finished; exiting so the next scheduled run takes over")
     return 0
 
 
