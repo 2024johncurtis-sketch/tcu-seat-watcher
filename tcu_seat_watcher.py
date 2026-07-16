@@ -27,10 +27,9 @@ TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
 # subject / course / section. The "note" is just a label for the alert.
 CLASSES = [
     {"subject": "FINA", "course": "30153", "section": "055", "note": "Rodriguez"},
-    {"subject": "INSC", "course": "30801", "section": "076", "note": "Markham"},
-    {"subject": "ACCT", "course": "30153", "section": "040", "note": "CAM - Fronk"},
     {"subject": "FINA", "course": "30213", "section": "035", "note": "NICK - Peckham"},
     {"subject": "MANA", "course": "30153", "section": "050", "note": "LIAM - Chapman"},
+    {"subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
