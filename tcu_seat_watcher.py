@@ -28,6 +28,9 @@ TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
 CLASSES = [
     {"subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
     {"subject": "FINA", "course": "30153", "section": "065", "note": "JJ - Rodriguez"},
+    {"subject": "FINA", "course": "30153", "section": "045", "note": "JJ - Ghimire"},
+    {"subject": "FINA", "course": "30153", "section": "056", "note": "JJ - Ghimire"},
+    {"subject": "FINA", "course": "30153", "section": "080", "note": "JJ - Ghimire"},
     {"subject": "MANA", "course": "30153", "section": "050", "note": "LIAM - Chapman"},
     {"subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
     {"subject": "FINA", "course": "30303", "section": "005", "note": "MAX BORCHERT - Tucker"},
