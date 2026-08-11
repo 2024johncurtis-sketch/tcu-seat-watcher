@@ -34,6 +34,7 @@ CLASSES = [
     {"subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
     {"subject": "FINA", "course": "30203", "section": "020", "note": "JAKE HORWICH - Hill"},
     {"subject": "FINA", "course": "40603", "section": "080", "note": "JAKE HORWICH - Thomas"},
+    {"subject": "ACCT", "course": "30153", "section": "040", "note": "CONNOR HOUSTON - Fronk"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
