@@ -10,7 +10,8 @@ Run modes:
   python tcu_seat_watcher.py --loop   check every 5 min for ~5.5 hours, then exit
                                        (this is what GitHub Actions runs)
 
-Add a class: copy a line in the CLASSES list below and change the 3 values.
+Add a class: copy a line in the CLASSES list below and change the values.
+"title" is the human-readable class name shown in the alert.
 """
 
 import os
@@ -23,18 +24,18 @@ from bs4 import BeautifulSoup
 # ------------------------------- CONFIG -------------------------------
 TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
 
-# Watch as many classes as you want. To add one, copy a line, change the
-# subject / course / section. The "note" is just a label for the alert.
+# Watch as many classes as you want. To add one, copy a line and change the
+# values. "title" is the class name shown in the alert; "note" says whose it is.
 CLASSES = [
-    {"subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
-    {"subject": "FINA", "course": "30153", "section": "045", "note": "*** JJ - Ghimire - TOP CHOICE ***"},
-    {"subject": "FINA", "course": "30153", "section": "056", "note": "JJ, OSHIE & CAM - Ghimire"},
-    {"subject": "FINA", "course": "30153", "section": "070", "note": "JJ - Traweek"},
-    {"subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
-    {"subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
-    {"subject": "FINA", "course": "30203", "section": "020", "note": "JAKE HORWICH - Hill"},
-    {"subject": "FINA", "course": "40603", "section": "080", "note": "JAKE HORWICH - Thomas"},
-    {"subject": "ACCT", "course": "30153", "section": "040", "note": "CONNOR HOUSTON - Fronk"},
+    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "045", "note": "*** JJ - Ghimire - TOP CHOICE ***"},
+    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
+    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "056", "note": "JJ, OSHIE & CAM - Ghimire"},
+    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "070", "note": "JJ - Traweek"},
+    {"title": "Investments",                       "subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
+    {"title": "Business Applications in Excel",     "subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
+    {"title": "Financial Institutions and Markets", "subject": "FINA", "course": "30203", "section": "020", "note": "JAKE HORWICH - Hill"},
+    {"title": "Real Estate Law",                   "subject": "FINA", "course": "40603", "section": "080", "note": "JAKE HORWICH - Thomas"},
+    {"title": "Financial Reporting I",             "subject": "ACCT", "course": "30153", "section": "040", "note": "CONNOR HOUSTON - Fronk"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
@@ -158,15 +159,24 @@ def notify(title, message):
         print(f"[no notifier set] {title}: {message}", file=sys.stderr)
 
 
+def make_label(cls):
+    """Build the alert label: class name first, then code, then whose it is."""
+    course_title = cls.get("title", "")
+    base = f"{cls['subject']} {cls['course']}-{cls['section']}"
+    note = cls.get("note", "")
+    label = f"{course_title} ({base})" if course_title else base
+    if note:
+        label += f" - {note}"
+    return label
+
+
 def check_one(session, cls, state):
     """Search one class; alert when it opens (and remind while it stays open)."""
-    subject, course, section = cls["subject"], cls["course"], cls["section"]
-    note = cls.get("note", "")
-    label = f"{subject} {course}-{section}" + (f" ({note})" if note else "")
+    label = make_label(cls)
 
     try:
         hidden = get_hidden_fields(session)
-        html = run_search(session, hidden, subject, course, section)
+        html = run_search(session, hidden, cls["subject"], cls["course"], cls["section"])
         text = page_text(html)
         status = judge_open(text)
     except Exception as e:
