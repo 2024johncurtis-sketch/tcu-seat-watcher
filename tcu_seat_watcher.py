@@ -27,10 +27,8 @@ TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
 # subject / course / section. The "note" is just a label for the alert.
 CLASSES = [
     {"subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
-    {"subject": "FINA", "course": "30153", "section": "065", "note": "JJ - Rodriguez"},
-    {"subject": "FINA", "course": "30153", "section": "045", "note": "JJ - Ghimire"},
+    {"subject": "FINA", "course": "30153", "section": "045", "note": "*** JJ - Ghimire - TOP CHOICE ***"},
     {"subject": "FINA", "course": "30153", "section": "056", "note": "JJ - Ghimire"},
-    {"subject": "FINA", "course": "30153", "section": "080", "note": "JJ - Ghimire"},
     {"subject": "FINA", "course": "30153", "section": "070", "note": "JJ - Traweek"},
     {"subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
     {"subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
