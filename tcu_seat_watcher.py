@@ -27,15 +27,16 @@ TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
 # Watch as many classes as you want. To add one, copy a line and change the
 # values. "title" is the class name shown in the alert; "note" says whose it is.
 CLASSES = [
-    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "045", "note": "*** JJ - Ghimire - TOP CHOICE ***"},
-    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
-    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "056", "note": "JJ, OSHIE & CAM - Ghimire"},
-    {"title": "Financial Management",              "subject": "FINA", "course": "30153", "section": "070", "note": "JJ - Traweek"},
-    {"title": "Investments",                       "subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
-    {"title": "Business Applications in Excel",     "subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
+    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "045", "note": "*** JJ - Ghimire - TOP CHOICE ***"},
+    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
+    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "056", "note": "JJ, OSHIE & CAM - Ghimire"},
+    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "070", "note": "JJ - Traweek"},
+    {"title": "Investments",                        "subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
+    {"title": "Business Applications in Excel",      "subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
     {"title": "Financial Institutions and Markets", "subject": "FINA", "course": "30203", "section": "020", "note": "JAKE HORWICH - Hill"},
-    {"title": "Real Estate Law",                   "subject": "FINA", "course": "40603", "section": "080", "note": "JAKE HORWICH - Thomas"},
-    {"title": "Financial Reporting I",             "subject": "ACCT", "course": "30153", "section": "040", "note": "CONNOR HOUSTON - Fronk"},
+    {"title": "Real Estate Law",                    "subject": "FINA", "course": "40603", "section": "080", "note": "JAKE HORWICH - Thomas"},
+    {"title": "Financial Reporting I",              "subject": "ACCT", "course": "30153", "section": "040", "note": "CONNOR HOUSTON - Fronk"},
+    {"title": "Real Estate Finance and Investment Analysis", "subject": "FINA", "course": "40613", "section": "080", "note": "GAVIN DALLAS - Benner"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
