@@ -22,22 +22,12 @@ import requests
 from bs4 import BeautifulSoup
 
 # ------------------------------- CONFIG -------------------------------
-TERM = "4267"   # Fall 2026 (the ddlTerm value). Leave this for Fall '26.
+TERM = "4273"   # Spring 2027 (the ddlTerm value). Fall 2026 was 4267.
 
 # Watch as many classes as you want. To add one, copy a line and change the
 # values. "title" is the class name shown in the alert; "note" says whose it is.
 CLASSES = [
-    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "045", "note": "*** JJ - Ghimire - TOP CHOICE ***"},
-    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "055", "note": "JJ - Rodriguez"},
-    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "056", "note": "JJ, OSHIE & CAM - Ghimire"},
-    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "070", "note": "JJ & OLIVIA DUNPHY - Traweek"},
-    {"title": "Investments",                        "subject": "FINA", "course": "30213", "section": "055", "note": "MATTHEW FILICE - Peckham"},
-    {"title": "Business Applications in Excel",      "subject": "INSC", "course": "30801", "section": "080", "note": "LIAM MOSIER - Markham"},
-    {"title": "Financial Institutions and Markets", "subject": "FINA", "course": "30203", "section": "020", "note": "JAKE HORWICH - Hill"},
-    {"title": "Real Estate Law",                    "subject": "FINA", "course": "40603", "section": "080", "note": "JAKE HORWICH - Thomas"},
-    {"title": "Financial Reporting I",              "subject": "ACCT", "course": "30153", "section": "040", "note": "CONNOR HOUSTON - Fronk"},
-    {"title": "Real Estate Finance and Investment Analysis", "subject": "FINA", "course": "40613", "section": "080", "note": "GAVIN DALLAS - Benner"},
-    {"title": "Financial Management",               "subject": "FINA", "course": "30153", "section": "080", "note": "OLIVIA DUNPHY - Ghimire"},
+    {"title": "Financial Derivatives", "subject": "FINA", "course": "30233", "section": "015", "note": "NICK F"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
@@ -214,6 +204,10 @@ def run_once(session, state):
 def main():
     session = requests.Session()
     state = {}
+
+    if not CLASSES:
+        print("No classes in the watch list yet — add some to CLASSES and redeploy.")
+        return 0
 
     if "--loop" not in sys.argv:
         run_once(session, state)
