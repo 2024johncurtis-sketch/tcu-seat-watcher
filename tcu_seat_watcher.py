@@ -28,6 +28,7 @@ TERM = "4273"   # Spring 2027 (the ddlTerm value). Fall 2026 was 4267.
 # values. "title" is the class name shown in the alert; "note" says whose it is.
 CLASSES = [
     {"title": "Financial Derivatives", "subject": "FINA", "course": "30233", "section": "015", "note": "NICK F"},
+    {"title": "Understanding Religion", "subject": "RELI", "course": "10033", "section": "080", "note": "TEST - should fire (open)"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
