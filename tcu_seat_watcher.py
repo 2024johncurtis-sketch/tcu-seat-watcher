@@ -30,6 +30,7 @@ CLASSES = [
     {"title": "Financial Derivatives", "subject": "FINA", "course": "30233", "section": "015", "note": "NICK F"},
     {"title": "Financial Reporting II", "subject": "ACCT", "course": "30253", "section": "005", "note": "JJ - Grennan"},
     {"title": "Financial Reporting II", "subject": "ACCT", "course": "30253", "section": "055", "note": "JJ & CAM - Wills"},
+    {"title": "Customer Insights", "subject": "MARK", "course": "30243", "section": "015", "note": "KAI MONAGHAN - Ross"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
