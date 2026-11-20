@@ -27,10 +27,8 @@ TERM = "4273"   # Spring 2027 (the ddlTerm value). Fall 2026 was 4267.
 # Watch as many classes as you want. To add one, copy a line and change the
 # values. "title" is the class name shown in the alert; "note" says whose it is.
 CLASSES = [
-    {"title": "Financial Derivatives", "subject": "FINA", "course": "30233", "section": "015", "note": "NICK F"},
     {"title": "Financial Reporting II", "subject": "ACCT", "course": "30253", "section": "005", "note": "JJ - Grennan"},
     {"title": "Financial Reporting II", "subject": "ACCT", "course": "30253", "section": "055", "note": "JJ & CAM - Wills"},
-    {"title": "Customer Insights", "subject": "MARK", "course": "30243", "section": "015", "note": "KAI MONAGHAN - Ross"},
 ]
 
 # Where to send the alert (set as environment variables / GitHub secrets).
